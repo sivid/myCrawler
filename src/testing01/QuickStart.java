@@ -53,7 +53,8 @@ public class QuickStart {
 		String outputFile = "test.html";
 		String baseWebSite = "http://www.nownews.com/n/2014/08/03/1352903";
 		try {
-			HttpGet httpGet = new HttpGet(baseWebSite + "cat/politic/r");
+			//HttpGet httpGet = new HttpGet(baseWebSite + "cat/politic/r");
+			HttpGet httpGet = new HttpGet(baseWebSite );
 			CloseableHttpResponse response1 = httpclient.execute(httpGet);
 			// The underlying HTTP connection is still held by the response
 			// object
@@ -78,8 +79,8 @@ public class QuickStart {
 						new FileOutputStream(outputFile), "UTF8"));
 				out.write(responseString);
 				out.close();
-
 				EntityUtils.consume(entity1);
+				System.out.println(baseWebSite + " output to " + outputFile + " successful");
 			} catch (Exception e) {
 				System.out.println(e.getMessage());
 			} finally {
