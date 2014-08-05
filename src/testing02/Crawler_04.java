@@ -18,7 +18,7 @@ public class Crawler_04 {
 	}
 
 	public static void main(String[] args) {
-		String url = "http://www.nownews.com/n/2014/08/02/1352300";
+		String url = "http://www.nownews.com/n/2014/08/03/1349583";
 		print("Fetching %s...\n", url);
 		// String matching = "www.nownews.com";
 		// String[] news_links = new String[20];	// there's 20 in each page, set to 50 to be safe .... or not.

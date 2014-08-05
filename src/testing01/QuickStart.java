@@ -51,7 +51,7 @@ public class QuickStart {
 	public static void main(String[] args) throws Exception {
 		CloseableHttpClient httpclient = HttpClients.createDefault();
 		String outputFile = "test.html";
-		String baseWebSite = "http://www.nownews.com/n/2014/08/03/1352903";
+		String baseWebSite = "http://www.ettoday.net/news/20130802/250478.htm";
 		try {
 			//HttpGet httpGet = new HttpGet(baseWebSite + "cat/politic/r");
 			HttpGet httpGet = new HttpGet(baseWebSite );
