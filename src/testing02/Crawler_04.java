@@ -18,7 +18,8 @@ public class Crawler_04 {
 	}
 
 	public static void main(String[] args) {
-		String url = "http://www.nownews.com/n/2014/08/03/1349583";
+		//String url = "http://www.nownews.com/n/2014/08/03/1349583";
+		String url = "http://www.nownews.com/n/2014/08/06/1357403";
 		print("Fetching %s...\n", url);
 		// String matching = "www.nownews.com";
 		// String[] news_links = new String[20];	// there's 20 in each page, set to 50 to be safe .... or not.
@@ -28,6 +29,12 @@ public class Crawler_04 {
 			Elements news_content = doc.select("div.story_content > p");
 			for (Element news : news_content){
 				System.out.println(news.text());
+			}
+			
+			// ==== grabs more links, for multi-page news
+			Elements more_pages = doc.select("#news_nav > a[href]");
+			for (Element more_links : more_pages){
+				System.out.println(more_links.attr("href"));
 			}
 			
 			// print("\nnumber of h2: (%d)", h2.size());

@@ -30,15 +30,14 @@ public class Crawler_04_ettoday_singlepage {
 		urlPool.add("http://www.ettoday.net/news/20120205/23024.htm");
 		urlPool.add("http://www.ettoday.net/news/20130204/160307.htm");
 		System.out.println("Fetching ...");
+		// patternArrows removes picture comments in ETtoday.  hopefully.
+		// two each for right and left, one each for up and down
 		String patternArrows = "[\u25BA\u25B6\u25C0\u25C4\u25BC\u25B2]";
 		String newsOwnText;
 		try {
 			for (String url : urlPool){
 				Document doc = Jsoup.connect(url).get();
 				Elements news_content = doc.select("div.story > p");
-				// patternArrows removes picture comments in ETtoday.  hopefully.
-				// two each for right and left, one each for up and down
-				
 				// TODO: filename should be changed to indicate date, time, news category
 				// motivation is to help us find out easily if these news has been scrapped or not
 				FileWriter fwContent=new FileWriter("website/NewsContent.txt", true);	
