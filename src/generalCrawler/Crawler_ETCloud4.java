@@ -1,4 +1,4 @@
-/* do a for loop for year, month, day
+ /* do a for loop for year, month, day
  * create and store ArrayList<String> for a full year, grab those links, check for redundancy, grab news content
  * 
  * NOTE: it seems pages in one day could appear in another day. damn.
@@ -7,7 +7,7 @@
  * However it still doesn't stop us from collecting redundant news items across sessions. 
  */
 
-/* add support for other news categories
+/* News categories
  * Not all categories are listed here.
  * 政治	1
  * 財經	17
@@ -25,7 +25,7 @@
 
 /* TODO
  * 1. add support for whatever db we choose to use
- * 1.1 decide on what metadata we should put in the db
+ * 1.1 decide what metadata we should put in the db				DONE
  * 2. implement a better redundancy checker (not required)
  * 3. multithreading? (not required)
  */
@@ -44,7 +44,7 @@ import org.jsoup.select.Elements;
 
 // NOTE: Grabbing monthly news items is not advisable.  see above.
 
-public class LC_ETCloud{
+public class Crawler_ETCloud4{
 	private int year = -1;
 	private int month = -1;
 	private int cat = -1;
@@ -54,14 +54,15 @@ public class LC_ETCloud{
 	//http://www.ettoday.net/news/news-list-2013-2-5-7.htm
 	//http://www.ettoday.net/news/news-list-2013-02-05-7-01.htm
 	//http://www.ettoday.net/news/news-list-2013-02-05-7-2.htm
+	final String ET_base = "http://www.ettoday.net";
 	
-	public LC_ETCloud(int year, int month, int cat){
+	public Crawler_ETCloud4(int year, int month, int cat){
 		this.year = year;
 		this.month = month;
 		this.cat = cat;
 	}
 	
-	public LC_ETCloud(int year, int cat){
+	public Crawler_ETCloud4(int year, int cat){
 		this.year = year;
 		this.cat = cat;
 	}
@@ -92,86 +93,72 @@ public class LC_ETCloud{
 	}
 	
 	public void CreateList(){
-		InitList();
 		// now we test to see if any firstOfEachDay links have more pages.
 		// they almost all do.
+		InitList();
+		System.out.println("IN");
+		String pagelink = ""; 
 		for (int urls=0; urls< urlListPool.size(); urls++){
 			String firstOfEachDay = urlListPool.get(urls);
-			String matching = "news-list-";
-			//.menu_page > a:nth-child(4)
 			try {
 				Document doc = Jsoup.connect(firstOfEachDay).get();
-				//Elements dailyNews = doc.select(".menu_page > a[href]");
-				Elements dailyNews = doc.select("a[href]");
-				for (Element link : dailyNews){
-					if (link.toString().contains(matching)){
-						String newslink = link.attr("abs:href");
-						if (checkLists(newslink)){
-							urlListPool.add(link.attr("abs:href"));
-						}
+				Elements additionalNewsList = doc.select(".menu_page > a[href]");
+				for (Element link : additionalNewsList){
+					pagelink = ET_base + link.attr("href");
+					if (checkLists(pagelink)){
+						urlListPool.add(pagelink);
 					}
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
+				System.exit(1);
 			}
-		} // end for.  Now we should have a list of all news links of that month.
+		} // end for.  Now we should have a list of all news links of that day.
 		for(String str : urlListPool){
 			System.out.println(str);
 		}
-		/*for(String str : urlListPool2){
-			System.out.println(str);
-		}*/
 		return;
 	}
 	
 	List<String>urlPool = new ArrayList<String>();		// news links in a news list page
-	public void getNewsLinks(int year){
-		//String testurls = "http://www.ettoday.net/news/news-list-2013-2-5-7.htm";
-		String check_year = Integer.toString(year);
+	public void getNewsLinks(){
+//		TODO: will probably rewrite this once we get a working db
+//		String tt = "http://www.ettoday.net/news/news-list-2013-2-5-7.htm";
+		String newslink = "";
 		try{
-			//urlListPool.addAll(urlListPool2);
 			for(String testurl : urlListPool){
 				Document doc = Jsoup.connect(testurl).get();
-				Elements newsLinks = doc.select("a[href]");
-				//Elements newsLinks = doc.select("#all-news-list > h3 > a");		// why can't I use this.. dang..
-				String matching = "news/" + check_year;
+				Elements newsLinks = doc.select(".listtxt_1 > h3 > a[href]");
 				for (Element link : newsLinks){
-					if (link.toString().contains(matching)){
-						String newslink = link.attr("abs:href");
-						//System.out.println("Found " + newslink);
-						if(checkItems(newslink)){
-							urlPool.add(newslink);
-						}
+					newslink = ET_base + link.attr("href");
+					if(checkItems(newslink)){
+						urlPool.add(newslink);
 					}
 				}
 			}
 		}catch(IOException e){
 			e.printStackTrace();
+			System.exit(1);
 		}
 		//System.out.println("test complete");
 		for (String tested : urlPool)
 			System.out.println(tested);
 	}
 	
-	public void getNewsItems(){
+	public void getNewsText(){
 		System.out.println("Fetching ...");
-		// patternArrows removes picture comments in ETtoday.  hopefully.
-		// two each for right and left, one each for up and down
-		String patternArrows = "[\u25BA\u25B6\u25C0\u25C4\u25BC\u25B2]";
 		String newsOwnText;
 		try {
 			for (String url : urlPool){
 				Document doc = Jsoup.connect(url).get();
-				Elements news_content = doc.select("div.story > p");
-				// TODO: filename should be changed to indicate date, time, news category
-				// motivation is to help us find out easily if these news has been scrapped or not
-				// OTOH, we'll probably put those in a db, so..
-				FileWriter fwContent=new FileWriter("website/NewsContent.txt", true);	
+				Elements news_content = doc.select(".story > p:nth-child(n+3)");
+				FileWriter fwContent=new FileWriter("website/NewsContent.txt", true);
+				fwContent.write(url + "\r\n");
 				for (Element news : news_content){
-					newsOwnText = news.ownText(); 		// repeated String object initialization ftw.
-					if(!newsOwnText.matches(patternArrows)){
+					newsOwnText = news.ownText();
+					if(checkText(newsOwnText)){
 						//System.out.println(newsOwnText);
-						fwContent.write(newsOwnText + "\r\n");
+						fwContent.write(newsOwnText);
 					}
 				}
 				Thread.sleep(500);  // internet courtesy and stuff
@@ -179,11 +166,11 @@ public class LC_ETCloud{
 				fwContent.flush();
 				fwContent.close();
 				System.out.println("URL: " + url + " ...done");
+				System.out.println("來源網站是" + "東森新聞雲");
 			} // end foreach urlPool
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
-		} catch (InterruptedException e){
-			e.printStackTrace();
+			System.exit(1);
 		}
 	}
 	
@@ -202,5 +189,21 @@ public class LC_ETCloud{
 		}
 		return true;
 	} // inefficient also.  yes.  I know. 
+	
+	private Boolean checkText(String newsText){
+		// patterns[0] removes picture comments in ETtoday.  hopefully.
+		// two each for right and left, one each for up and down
+		// probably not needed with etcloud crawler v4, leaving it in just in case.
+		String[] patterns = new String[4];
+		patterns[0] = "[\u25BA\u25B6\u25C0\u25C4\u25BC\u25B2]";
+		patterns[1] = "^(地方中心).*$";
+		patterns[2] = "^(記者).*$";
+		patterns[3] = "^.*(報導)$";
+		if(newsText.matches(patterns[0]))
+			return false;
+		if((newsText.matches(patterns[1]) || newsText.matches(patterns[2])) && newsText.matches(patterns[3]))
+			return false;	// String.startsWith() and String.endsWith() just seems way less cooler somehow. efficiency byebye
+		return true;
+	}
 
 }
