@@ -13,10 +13,10 @@ public class CrawlerMain {
 //		Please see LC_ETCloud4.java for category listing.
 //		Crawler_ETCloud4(year, month, category);
 //		Crawler_ETCloud4(year, category);
-		Crawler_ETCloud4 crawl_et4 = new Crawler_ETCloud4(2013, 2, 20);			// use month only for testing
-		crawl_et4.CreateList();
-		crawl_et4.getNewsLinks();
-		crawl_et4.getNewsText();
+		Crawler_ETCloud5 crawl_et5 = new Crawler_ETCloud5(2013, 2, 20);			// use month only for testing
+		crawl_et5.CreateList();
+		crawl_et5.getNewsLinks();
+		crawl_et5.getNewsAll();
 		
 		System.out.println("all done");
 	}

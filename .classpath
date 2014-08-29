@@ -11,5 +11,6 @@
 	<classpathentry kind="lib" path="C:/Users/III/Dropbox/iii/web crawler/jsoup-1.7.2.jar"/>
 	<classpathentry kind="lib" path="C:/Users/III/Dropbox/iii/web crawler/htmlcleaner-2.8.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="C:/Users/III/Dropbox/iii/web crawler/mongo-java-driver-2.12.3.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

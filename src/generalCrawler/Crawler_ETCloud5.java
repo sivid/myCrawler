@@ -24,7 +24,7 @@
  */
 
 /* TODO
- * 1. add support for whatever db we choose to use
+ * 1. add support for whatever db we choose to use				DONE
  * 1.1 decide what metadata we should put in the db				DONE
  * 2. implement a better redundancy checker (not required)
  * 3. multithreading? (not required)
@@ -32,19 +32,33 @@
 
 package generalCrawler;
 
-import java.io.FileWriter;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+
+import javax.imageio.ImageIO;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.MongoClient;
+
 // NOTE: Grabbing monthly news items is not advisable.  see above.
 
-public class Crawler_ETCloud4{
+public class Crawler_ETCloud5{
 	private int year = -1;
 	private int month = -1;
 	private int cat = -1;
@@ -56,13 +70,13 @@ public class Crawler_ETCloud4{
 	//http://www.ettoday.net/news/news-list-2013-02-05-7-2.htm
 	final String ET_base = "http://www.ettoday.net";
 	
-	public Crawler_ETCloud4(int year, int month, int cat){
+	public Crawler_ETCloud5(int year, int month, int cat){
 		this.year = year;
 		this.month = month;
 		this.cat = cat;
 	}
 	
-	public Crawler_ETCloud4(int year, int cat){
+	public Crawler_ETCloud5(int year, int cat){
 		this.year = year;
 		this.cat = cat;
 	}
@@ -122,7 +136,6 @@ public class Crawler_ETCloud4{
 	
 	List<String>urlPool = new ArrayList<String>();		// news links in a news list page
 	public void getNewsLinks(){
-//		TODO: will probably rewrite this once we get a working db
 //		String tt = "http://www.ettoday.net/news/news-list-2013-2-5-7.htm";
 		String newslink = "";
 		try{
@@ -140,37 +153,103 @@ public class Crawler_ETCloud4{
 			e.printStackTrace();
 			System.exit(1);
 		}
-		//System.out.println("test complete");
-		for (String tested : urlPool)
-			System.out.println(tested);
+		System.out.println("test complete");
+//		for (String tested : urlPool)
+//			System.out.println(tested);
 	}
 	
-	public void getNewsText(){
+	public void getNewsAll(){
 		System.out.println("Fetching ...");
-		String newsOwnText;
+		MongoClient mongoClient;
+		String newsID = "";
+		final String source = "ETToday";
 		try {
+			mongoClient = new MongoClient("10.120.25.119", 27017);
 			for (String url : urlPool){
 				Document doc = Jsoup.connect(url).get();
-				Elements news_content = doc.select(".story > p:nth-child(n+3)");
-				FileWriter fwContent=new FileWriter("website/NewsContent.txt", true);
-				fwContent.write(url + "\r\n");
-				for (Element news : news_content){
-					newsOwnText = news.ownText();
-					if(checkText(newsOwnText)){
-						//System.out.println(newsOwnText);
-						fwContent.write(newsOwnText);
-					}
-				}
+				DB db = mongoClient.getDB("mydb");
+				DBCollection coll = db.getCollection("inventory");
+				//http://www.ettoday.net/news/ 20140822 / 392825 .htm
+				newsID="et" + url.substring(28, 36) + url.substring(37,43);	// this also has the nice side effect of checking for 
+				BasicDBObject newsdoc = new BasicDBObject("_id", newsID)	// duplicate news, again, on MongoDB
+								.append("Category", getCategory(doc))
+								.append("NewsText", getNewsText(doc))
+								.append("DateTime", getDateTime(url))
+								.append("Title", getTitle(doc))
+								.append("Source", source)
+								.append("link", url)
+								.append("img", getImage(doc))
+								.append("keywords", getKeywords(doc));
+				coll.insert(newsdoc);
+				
+				System.out.println("URL: " + url + " ...done.  Sleeping 500ms");
 				Thread.sleep(500);  // internet courtesy and stuff
-				fwContent.write("\r\n=====================SeparatorText======================\r\n");
-				fwContent.flush();
-				fwContent.close();
-				System.out.println("URL: " + url + " ...done");
 			} // end foreach urlPool
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(1);
 		}
+	}
+	
+	private String getCategory(Document doc){
+		Elements cats = doc.select(".channel");
+		return cats.first().ownText();
+	}
+	private String getNewsText(Document doc){
+		String newsOwnText = "";
+		String newsFinalText = "";
+		Elements news_content = doc.select(".story > p:nth-child(n+3)");			// variable.. +3 +4 +5
+		for (Element news : news_content){
+			newsOwnText = news.ownText();
+			if(checkText(newsOwnText)){
+				newsFinalText += newsOwnText;		// where do i put in a newline somewhere..
+			}
+		}
+		return newsFinalText;
+	}
+	private Date getDateTime(String url) throws ParseException{
+		String tempdate=url.substring(28, 36);
+		SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd");
+        Date datetime = formatter.parse(tempdate);
+        return datetime;
+	}	
+	private String getTitle(Document doc){
+		Elements titles = doc.select(".contents_3 > h2:nth-child(2)");
+		if(titles.first()!=null){
+			return titles.first().ownText();
+		}else
+			return "新聞標題";
+	}
+	private byte[] getImage(Document doc) throws MalformedURLException, IOException{
+		Elements pictures = doc.select(".story > p > img");
+		BufferedImage imm = null;
+		byte[] immAsBytes = null;
+		if(pictures.first()!=null) {								// 
+			Element pic = pictures.first(); 
+			imm = ImageIO.read(new URL(pic.attr("src")));
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			ImageIO.write(imm, "jpg", baos );
+			baos.flush();
+			immAsBytes = baos.toByteArray();
+			baos.close();
+			//http://stackoverflow.com/questions/21500339/storing-image-in-data-base-using-java-in-binary-format
+		}else{
+			imm = ImageIO.read(new File("website/ch.jpg"));
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			ImageIO.write(imm, "jpg", baos );
+			baos.flush();
+			immAsBytes = baos.toByteArray();
+			baos.close();
+		}
+		return immAsBytes;
+	}
+	private List<String> getKeywords(Document doc){
+		List<String> list =new ArrayList<String>();
+		Elements keywords = doc.select(".menu_keyword > a:nth-child(n) > strong");
+		for (Element key : keywords){
+			list.add(key.ownText());
+		}
+		return list; 
 	}
 	
 	private Boolean checkItems(String link) {
@@ -200,8 +279,10 @@ public class Crawler_ETCloud4{
 		patterns[3] = "^.*(報導)$";
 		if(newsText.matches(patterns[0]))
 			return false;
-		if((newsText.matches(patterns[1]) || newsText.matches(patterns[2])) && newsText.matches(patterns[3]))
+		else if((newsText.matches(patterns[1]) || newsText.matches(patterns[2])) && newsText.matches(patterns[3]))
 			return false;	// String.startsWith() and String.endsWith() just seems way less cooler somehow. efficiency byebye
+		else if(!(newsText.trim().length() > 0))
+			return false;
 		return true;
 	}
 

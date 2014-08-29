@@ -25,7 +25,6 @@ public class Crawler_ETCloud_sup {
 	static String day;
 	public static void getDocument(){
 		urlListPool.add("http://www.ettoday.net/news/20140822/392825.htm");
-		urlListPool.add("http://www.ettoday.net/news/20140826/393865.htm");
 //		urlListPool.add("http://www.ettoday.net/news/news-list-2013-2-5-7.htm");
 		for (int urls=0; urls< urlListPool.size(); urls++){
 //			getDay = urlListPool.get(urls).toString().split("/");
@@ -75,7 +74,7 @@ public class Crawler_ETCloud_sup {
 				for (Element cc : cats){
 					System.out.println(cc.ownText());
 				}
-				sepee();
+				sepee("keywords");
 				//.menu_keyword > a:nth-child(1) > strong:nth-child(1)		// 
 				Elements keywords = doc.select(".menu_keyword > a:nth-child(n) > strong");
 				for (Element key : keywords){
@@ -98,7 +97,7 @@ public class Crawler_ETCloud_sup {
 					System.out.println(titles.first().ownText());
 				}
 				sepee();
-				testGetDoc(doc);
+//				testGetDoc(doc);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -133,6 +132,8 @@ public class Crawler_ETCloud_sup {
 //			System.err.println("===");
 		if((newsText.matches(patterns[1]) || newsText.matches(patterns[2])) && newsText.matches(patterns[3]))
 			return false;	// String.startsWith and String.endsWith just seems way less cooler.. goodbye efficiency~
+		if(!(newsText.trim().length() > 0))
+			return false;
 		return true;
 	}
 	
